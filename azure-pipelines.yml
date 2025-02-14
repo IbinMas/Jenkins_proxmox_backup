@@ -7,30 +7,64 @@ trigger:
 pool:
   name: Default  # Using the Default agent pool
 
-stages:
-- stage: Build_stage
-  jobs:
-  - job: BuildJob
-    displayName: "Build Stage"
-    # pool:
-    #   name: Default  # Ensures the same pool
-    steps:
-      - script: |
-          echo "Running on agent: $AGENT_NAME"
-          echo "##vso[task.setvariable variable=AgentName;isOutput=true]$AGENT_NAME"
-        name: CaptureAgent  # This is an important step name for referencing later
+# stages:
+# - stage: Build_stage
+#   jobs:
+#   - job: BuildJob
+#     displayName: "Build Stage"
+#     # pool:
+#     #   name: Default  # Ensures the same pool
+#     steps:
+#       - script: |
+#           echo "Running on agent: $AGENT_NAME"
+#           echo "##vso[task.setvariable variable=AgentName;isOutput=true]$AGENT_NAME"
+#         name: CaptureAgent  # This is an important step name for referencing later
 
-- stage: Deploying_Service_to_AKS
-  dependsOn: Build_stage  # Ensures sequential execution
-  variables:
-    Agent_Name: $[ stageDependencies.Build_stage.outputs['BuildJob.CaptureAgent.AgentName'] ]  # Retrieves the agent name
+# - stage: Deploying_Service_to_AKS
+#   dependsOn: Build_stage  # Ensures sequential execution
+#   variables:
+#     Agent_Name: $[ stageDependencies.Build_stage.outputs['BuildJob.CaptureAgent.AgentName'] ]  # Retrieves the agent name
+#   jobs:
+#   - job: DeployJob
+#     displayName: "Deploying Service to AKS"
+#     # pool:
+#     #   name: Default
+#       #demands:
+#       #  - Agent.Name -equals $(AgentName)  # Forces selection of the same agent
+#     steps:
+#       - script: |
+#           echo "Deploying service to AKS using agent: $(Agent_Name)"
+
+stages:
+- stage: One
   jobs:
-  - job: DeployJob
-    displayName: "Deploying Service to AKS"
-    # pool:
-    #   name: Default
-      #demands:
-      #  - Agent.Name -equals $(AgentName)  # Forces selection of the same agent
+  - job: A
     steps:
-      - script: |
-          echo "Deploying service to AKS using agent: $(Agent_Name)"
+    - script: |
+        echo "Running on agent: $AGENT_NAME"
+        echo "##vso[task.setvariable variable=MyVar;isOutput=true]$AGENT_NAME"
+      name: ProduceVar  # This is an important step name for referencing later
+      # name: ProduceVar  # because we're going to depend on it, we need to name the step
+
+- stage: Two
+  dependsOn:
+  - One
+  jobs:
+  - job: B
+    variables:
+      # map the output variable from A into this job
+      varFromA: $[ stageDependencies.One.A.outputs['ProduceVar.MyVar'] ]
+    steps:
+    - script: echo $(varFromA) # this step uses the mapped-in variable
+
+- stage: Three
+  dependsOn:
+  - One
+  - Two
+  jobs:
+  - job: C
+    variables:
+      # map the output variable from A into this job
+      varFromA: $[ stageDependencies.One.A.outputs['ProduceVar.MyVar'] ]
+    steps:
+    - script: echo $(varFromA) # this step uses the mapped-in variable
