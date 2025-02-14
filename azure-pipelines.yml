@@ -4,8 +4,7 @@ trigger:
 # variables:
 #   AgentName: ''  # Variable to store agent name dynamically
 
-pool:
-  name: Default  # Using the Default agent pool
+pool: Default
 
 stages:
 - stage: One
