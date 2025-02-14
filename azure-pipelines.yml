@@ -1,8 +1,8 @@
 trigger:
   - main
 
-variables:
-  AgentName: ''  # Variable to store agent name dynamically
+# variables:
+#   AgentName: ''  # Variable to store agent name dynamically
 
 pool:
   name: Default  # Using the Default agent pool
@@ -23,7 +23,7 @@ stages:
 - stage: Deploying_Service_to_AKS
   dependsOn: Build_stage  # Ensures sequential execution
   variables:
-    AgentName: $[ stageDependencies.Build_stage.outputs['BuildJob.CaptureAgent.AgentName'] ]  # Retrieves the agent name
+    Agent_Name: $[ stageDependencies.Build_stage.outputs['BuildJob.CaptureAgent.AgentName'] ]  # Retrieves the agent name
   jobs:
   - job: DeployJob
     displayName: "Deploying Service to AKS"
@@ -33,4 +33,4 @@ stages:
       #  - Agent.Name -equals $(AgentName)  # Forces selection of the same agent
     steps:
       - script: |
-          echo "Deploying service to AKS using agent: $(AgentName)"
+          echo "Deploying service to AKS using agent: $(Agent_Name)"
