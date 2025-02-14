@@ -8,7 +8,7 @@ pool:
   name: Default  # Using the Default agent pool
 
 stages:
-- stage: Build
+- stage: Build_stage
   jobs:
   - job: BuildJob
     displayName: "Build Stage"
@@ -21,16 +21,16 @@ stages:
         name: CaptureAgent  # This is an important step name for referencing later
 
 - stage: Deploying_Service_to_AKS
-  dependsOn: Build  # Ensures sequential execution
+  dependsOn: Build_stage  # Ensures sequential execution
   variables:
-    AgentName: $[ dependencies.Build.outputs['BuildJob.CaptureAgent.AgentName'] ]  # Retrieves the agent name
+    AgentName: $[ dependencies.Build_stage.outputs['BuildJob.CaptureAgent.AgentName'] ]  # Retrieves the agent name
   jobs:
   - job: DeployJob
     displayName: "Deploying Service to AKS"
     pool:
       name: Default
-      demands:
-        - Agent.Name -equals $(AgentName)  # Forces selection of the same agent
+      #demands:
+      #  - Agent.Name -equals $(AgentName)  # Forces selection of the same agent
     steps:
       - script: |
           echo "Deploying service to AKS using agent: $(AgentName)"
