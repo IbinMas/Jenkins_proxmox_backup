@@ -12,8 +12,8 @@ stages:
   jobs:
   - job: BuildJob
     displayName: "Build Stage"
-    pool:
-      name: Default  # Ensures the same pool
+    # pool:
+    #   name: Default  # Ensures the same pool
     steps:
       - script: |
           echo "Running on agent: $AGENT_NAME"
@@ -27,8 +27,8 @@ stages:
   jobs:
   - job: DeployJob
     displayName: "Deploying Service to AKS"
-    pool:
-      name: Default
+    # pool:
+    #   name: Default
       #demands:
       #  - Agent.Name -equals $(AgentName)  # Forces selection of the same agent
     steps:
