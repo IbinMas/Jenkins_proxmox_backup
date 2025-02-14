@@ -29,7 +29,7 @@ stages:
       name: Default  # Ensures the same pool
     variables:
       # map the output variable from A into this job
-      varFromA: $[ stageDependencies.One.A.outputs['ProduceVar.MyVar'] ]
+      varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
     steps:
     - script: echo $(varFromA) # this step uses the mapped-in variable
 
@@ -43,6 +43,6 @@ stages:
       name: Default  # Ensures the same pool
     variables:
       # map the output variable from A into this job
-      varFromA: $[ stageDependencies.One.A.outputs['ProduceVar.MyVar'] ]
+      varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
     steps:
     - script: echo $(varFromA) # this step uses the mapped-in variable
