@@ -4,12 +4,15 @@ trigger:
 # variables:
 #   AgentName: ''  # Variable to store agent name dynamically
 
-pool: Default
+# pool:
+#   name: Default  # Using the Default agent pool
 
 stages:
 - stage: One
   jobs:
   - job: A
+    pool:
+      name: Default  # Ensures the same pool
     steps:
     - script: |
         echo "Running on agent: $AGENT_NAME"
@@ -22,6 +25,8 @@ stages:
   - One
   jobs:
   - job: B
+    pool:
+      name: Default  # Ensures the same pool
     variables:
       # map the output variable from A into this job
       varFromA: $[ stageDependencies.One.A.outputs['ProduceVar.MyVar'] ]
@@ -34,6 +39,8 @@ stages:
   - Two
   jobs:
   - job: C
+    pool:
+      name: Default  # Ensures the same pool
     variables:
       # map the output variable from A into this job
       varFromA: $[ stageDependencies.One.A.outputs['ProduceVar.MyVar'] ]
