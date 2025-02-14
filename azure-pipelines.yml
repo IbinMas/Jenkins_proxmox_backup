@@ -23,7 +23,7 @@ stages:
 - stage: Deploying_Service_to_AKS
   dependsOn: Build_stage  # Ensures sequential execution
   variables:
-    AgentName: $[ dependencies.Build_stage.outputs['BuildJob.CaptureAgent.AgentName'] ]  # Retrieves the agent name
+    AgentName: $[ stageDependencies.Build_stage.outputs['BuildJob.CaptureAgent.AgentName'] ]  # Retrieves the agent name
   jobs:
   - job: DeployJob
     displayName: "Deploying Service to AKS"
