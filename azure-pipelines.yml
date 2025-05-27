@@ -1,50 +1,58 @@
+
 trigger:
   - main
-
-# variables:
-#   AgentName: ''  # Variable to store agent name dynamically
-
-# pool:
-#   name: Default  # Using the Default agent pool
 
 stages:
 - stage: One
   jobs:
   - job: A
     pool:
-      name: Default  # Ensures the same pool
+      name: Default
     steps:
     - script: |
         docker --version
         docker ps
         echo "Running on agent: $AGENT_NAME"
         echo "##vso[task.setvariable variable=MyVar;isOutput=true]$AGENT_NAME"
-      name: ProduceVar  # This is an important step name for referencing later
-      # name: ProduceVar  # because we're going to depend on it, we need to name the step
+      name: ProduceVar
 
 - stage: Two
   dependsOn:
-  - One
+    - One
   jobs:
-  - job: B
-    pool:
-      name: Default  # Ensures the same pool
+  - job: B_waitForValidation
+    pool: server  # Server job required for ManualValidation
     variables:
-      # map the output variable from A into this job
       varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
     steps:
-    - script: echo $(varFromA) # this step uses the mapped-in variable
+    - task: ManualValidation@0
+      timeoutInMinutes: 1440
+      inputs:
+        notifyUsers: |
+          mohammedanuwarsadat@gmail.com
+        instructions: 'Please validate the build configuration and resume'
+        onTimeout: 'resume'
+
+  - job: B_followUp
+    dependsOn: B_waitForValidation
+    pool:
+      name: Default
+    variables:
+      varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
+    steps:
+    - script: echo $(varFromA)
 
 - stage: Three
   dependsOn:
-  - One
-  - Two
+    - One
+    - Two
   jobs:
   - job: C
     pool:
-      name: Default  # Ensures the same pool
+      name: Default
     variables:
-      # map the output variable from A into this job
       varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
     steps:
-    - script: echo $(varFromA) # this step uses the mapped-in variable
+    - script: echo $(varFromA)
+
+
