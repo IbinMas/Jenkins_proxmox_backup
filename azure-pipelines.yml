@@ -5,7 +5,7 @@ trigger:
 stages:
 - stage: One
   jobs:
-  - job: ManualApprovalTest
+  - job: A_ManualApprovalTest
     pool: server
     steps:
     - task: ManualValidation@0
@@ -15,6 +15,7 @@ stages:
         instructions: 'Please validate this'
 
   - job: A
+    dependsOn: A_ManualApprovalTest
     pool:
       name: Linux-agent-pool
     steps:
@@ -38,7 +39,7 @@ stages:
       timeoutInMinutes: 1440
       inputs:
         notifyUsers: |
-          [Project Collection Administrators]
+          sadatbunmohammed@outlook.com
         instructions: 'Please validate the build configuration and resume'
         onTimeout: 'resume'
 
@@ -57,7 +58,7 @@ stages:
     - Two
   jobs:
   - job: C_waitForValidation
-    pool: server  # Server job required for ManualValidation
+    pool: server
     variables:
       varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
     steps:
@@ -68,7 +69,9 @@ stages:
           sadatbunmohammed@outlook.com
         instructions: 'Please validate the build configuration and resume'
         onTimeout: 'resume'
+
   - job: C
+    dependsOn: C_waitForValidation  # <-- This ensures C runs after validation
     pool:
       name: Linux-agent-pool
     variables:
