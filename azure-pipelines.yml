@@ -7,7 +7,7 @@ stages:
   jobs:
   - job: A
     pool:
-      name: Default
+      name: Linux-agent-pool
     steps:
     - script: |
         docker --version
@@ -36,7 +36,7 @@ stages:
   - job: B_followUp
     dependsOn: B_waitForValidation
     pool:
-      name: Default
+      name: Linux-agent-pool
     variables:
       varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
     steps:
@@ -49,7 +49,7 @@ stages:
   jobs:
   - job: C
     pool:
-      name: Default
+      name: Linux-agent-pool
     variables:
       varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
     steps:
