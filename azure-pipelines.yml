@@ -11,7 +11,7 @@ stages:
     - task: ManualValidation@0
       inputs:
         notifyUsers: |
-          mohammedanuwaarsadat@gmail.com
+          sadatbunmohammed@outlook.com
         instructions: 'Please validate this'
 
   - job: A
@@ -52,10 +52,27 @@ stages:
     steps:
     - script: echo $(varFromA)
 
+- stage: ManualValidation
+  dependsOn: Two
+  jobs:
+  - job: A_WaitForApproval
+    pool: server  #  Must be server job for ManualValidation
+    variables:
+      varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
+    steps:
+    - task: ManualValidation@0
+      timeoutInMinutes: 1440
+      inputs:
+        notifyUsers: |
+          sadatbunmohammed@outlook.com
+        instructions: 'Please validate the deployment and continue.'
+        onTimeout: 'reject'
+        
 - stage: Three
   dependsOn:
     - One
     - Two
+    - ManualValidation
   jobs:
   - job: C_waitForValidation
     pool: server
