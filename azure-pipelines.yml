@@ -7,62 +7,38 @@ parameters:
     type: string
     default: 'main'
     values:
+      - main
       - v1.0.0
       - v2.0.0
-      - v3.0.0
-      - v4.0.0
 
-- stage: Deploy
-  displayName: 'Deployment Stage'
-  dependsOn: Approval
-  jobs:
-  - job: B
-    displayName: 'Deploy Services'
-    pool:
-      name: Linux-agent-pool
-    steps:
-    - checkout: self
-      fetchDepth: 0  # Get full history including all tags
-      displayName: 'Initial Checkout'
-    
-    - script: |
-        docker --version
-        docker ps
-        echo "Running on agent: $AGENT_NAME"
-        echo "##vso[task.setvariable variable=MyVar;isOutput=true]$AGENT_NAME"
-      name: ProduceVar
-      displayName: 'Agent Info'
+pool:
+  name: Linux-agent-pool
+
+jobs:
+- job: Deploy
+  displayName: 'Deploy Services'
+  steps:
+  - checkout: self
+    fetchDepth: 0
+    displayName: 'Initial Checkout'
+  
+  - script: |
+      echo "Attempting to checkout: ${{ parameters.VERSION_OR_BRANCH }}"
       
-    - script: |
-        cd $(Build.SourcesDirectory)
-        
-        # Fetch all branches and tags
-        echo "Fetching all references..."
-        git fetch --all --tags
-        
-        # Check if the specified reference exists and checkout
-        echo "Attempting to checkout: ${{ parameters.VERSION_OR_BRANCH }}"
-        
-        if git show-ref --verify --quiet refs/heads/${{ parameters.VERSION_OR_BRANCH }}; then
-          echo "Checking out branch: ${{ parameters.VERSION_OR_BRANCH }}"
-          git checkout ${{ parameters.VERSION_OR_BRANCH }}
-        elif git show-ref --verify --quiet refs/tags/${{ parameters.VERSION_OR_BRANCH }}; then
-          echo "Checking out tag: ${{ parameters.VERSION_OR_BRANCH }}"
-          git checkout tags/${{ parameters.VERSION_OR_BRANCH }}
-        elif git cat-file -e ${{ parameters.VERSION_OR_BRANCH }} 2>/dev/null; then
-          echo "Checking out commit: ${{ parameters.VERSION_OR_BRANCH }}"
-          git checkout ${{ parameters.VERSION_OR_BRANCH }}
-        else
-          echo "Error: '${{ parameters.VERSION_OR_BRANCH }}' is not a valid branch, tag, or commit hash"
-          echo "Available branches:"
-          git branch -r
-          echo "Available tags:"
-          git tag --list
-          exit 1
-        fi
-        
-        echo "Successfully checked out: ${{ parameters.VERSION_OR_BRANCH }}"
-        echo "Current commit:"
-        git log -1 --oneline
-      displayName: 'Checkout ${{ parameters.VERSION_OR_BRANCH }}'
-    
+      if git show-ref --verify --quiet refs/heads/${{ parameters.VERSION_OR_BRANCH }}; then
+        git checkout ${{ parameters.VERSION_OR_BRANCH }}
+      elif git show-ref --verify --quiet refs/tags/${{ parameters.VERSION_OR_BRANCH }}; then
+        git checkout tags/${{ parameters.VERSION_OR_BRANCH }}
+      else
+        echo "Error: '${{ parameters.VERSION_OR_BRANCH }}' not found"
+        exit 1
+      fi
+      
+      echo "Successfully checked out: ${{ parameters.VERSION_OR_BRANCH }}"
+      git log -1 --oneline
+    displayName: 'Checkout ${{ parameters.VERSION_OR_BRANCH }}'
+  
+  - script: |
+      docker --version
+      echo "Ready for deployment"
+    displayName: 'Deploy'
