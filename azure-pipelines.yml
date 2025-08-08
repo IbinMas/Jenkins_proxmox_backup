@@ -7,17 +7,18 @@ parameters:
     type: string
     default: '$(Build.SourceBranchName)'
 
-  # - name: ENVIRONMENT
-  #   displayName: 'Target environment'
-  #   type: string
-  #   default: 'sandbox'
-  #   values:
-  #     - sandbox
-  #     - dev
-  #     - stage
-  #     - prod
-  #     - common
-  #     - critical-env
+  - name: ENVIRONMENT
+    displayName: 'Target environment'
+    type: string
+    default: 'sandbox'
+    values:
+      - sandbox
+      - dev
+      - stage
+      - prod
+      - common
+      - critical-env
+
 
 
 variables:
@@ -37,7 +38,7 @@ stages:
       inputs:
         notifyUsers: |
           sadatbunmohammed@outlook.com
-        instructions: 'Please validate the deployment for ${{ parameters.ENVIRONMENT }} environment with version/branch:'
+        instructions: 'Please validate the deployment for ${{ parameters.ENVIRONMENT }} environment with version/branch: ${{ parameters.VERSION_OR_BRANCH }}'
 
 - stage: Deploy
   displayName: 'Deployment Stage'
