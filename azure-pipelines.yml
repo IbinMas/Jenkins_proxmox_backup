@@ -6,10 +6,6 @@ parameters:
     displayName: 'Version tag or branch name'
     type: string
     default: 'main'
-    values:
-      - main
-      - v1.0.0
-      - v2.0.0
 
 pool:
   name: Linux-agent-pool
