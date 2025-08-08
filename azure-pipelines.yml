@@ -1,99 +1,189 @@
-
 trigger:
   - main
 
+parameters:
+  - name: VERSION_OR_BRANCH
+    displayName: 'Version tag or branch name'
+    type: string
+    default: 'main'
+
+  - name: ENVIRONMENT
+    displayName: 'Target environment'
+    type: string
+    default: 'sandbox'
+    values:
+      - sandbox
+      - dev
+      - stage
+      - prod
+      - common
+      - critical-env
+
+
+# variables:
+#   DEPLOY_PATH: 'nexus-v3.69.0'
+#   TARGET_SERVER: 'DevOps-01'
+#   # NEXUS_ADMIN_PASSWORD: # Add as pipeline variable or use Azure Key Vault
+
 stages:
-- stage: One
+- stage: Approval
+  displayName: 'Manual Approval Stage'
   jobs:
   - job: A_ManualApprovalTest
+    displayName: 'Manual Approval'
     pool: server
     steps:
     - task: ManualValidation@0
       inputs:
         notifyUsers: |
           sadatbunmohammed@outlook.com
-        instructions: 'Please validate this'
+        instructions: 'Please validate the deployment for ${{ parameters.ENVIRONMENT }} environment with version/branch: ${{ parameters.VERSION_OR_BRANCH }}'
 
-  - job: A
-    dependsOn: A_ManualApprovalTest
+- stage: Deploy
+  displayName: 'Deployment Stage'
+  dependsOn: Approval
+  jobs:
+  - job: B
+    displayName: 'Deploy Services'
     pool:
       name: Linux-agent-pool
     steps:
+    - checkout: none  # Don't auto-checkout initially
+    
     - script: |
         docker --version
         docker ps
         echo "Running on agent: $AGENT_NAME"
         echo "##vso[task.setvariable variable=MyVar;isOutput=true]$AGENT_NAME"
       name: ProduceVar
+      displayName: 'Agent Info'
+      
+    - script: |
+        git clone $(Build.Repository.Uri) $(Build.SourcesDirectory)
+        cd $(Build.SourcesDirectory)
+        git checkout ${{ parameters.VERSION_OR_BRANCH }}
+        echo "Successfully checked out: ${{ parameters.VERSION_OR_BRANCH }}"
+        git log -1 --oneline
+      displayName: 'Checkout ${{ parameters.VERSION_OR_BRANCH }}'
+    
+    # - script: |
+    #     echo "Environment: ${{ parameters.ENVIRONMENT }}"
+    #     echo "Services: ${{ parameters.SERVICES }}"
+    #     echo "Roles: ${{ parameters.ROLES }}"
+    #     echo "Deploy Path: $(DEPLOY_PATH)"
+    #     echo "Target Server: $(TARGET_SERVER)"
+    #     echo "Version/Branch: ${{ parameters.VERSION_OR_BRANCH }}"
+    #   displayName: 'Display Parameters and Variables'
+    
+    # Add your build steps here
+    # Example:
+    # - script: |
+    #     docker build -t myapp:${{ parameters.VERSION_OR_BRANCH }} .
+    #   displayName: 'Build Docker Image'
+    
+    # Add your deployment steps here
+    # Example:
+    # - script: |
+    #     # Your deployment commands using the checked out version
+    #   displayName: 'Deploy to ${{ parameters.ENVIRONMENT }}'
 
-- stage: Two
-  dependsOn:
-    - One
-  jobs:
-  - job: B_waitForValidation
-    pool: server  # Server job required for ManualValidation
-    variables:
-      varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
-    steps:
-    - task: ManualValidation@0
-      timeoutInMinutes: 1440
-      inputs:
-        notifyUsers: |
-          sadatbunmohammed@outlook.com
-        instructions: 'Please validate the build configuration and resume'
-        onTimeout: 'resume'
 
-  - job: B_followUp
-    dependsOn: B_waitForValidation
-    pool:
-      name: Linux-agent-pool
-    variables:
-      varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
-    steps:
-    - script: echo $(varFromA)
 
-- stage: ManualValidation
-  dependsOn: Two
-  jobs:
-  - job: A_WaitForApproval
-    pool: server  #  Must be server job for ManualValidation
-    variables:
-      varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
-    steps:
-    - task: ManualValidation@0
-      timeoutInMinutes: 1440
-      inputs:
-        notifyUsers: |
-          sadatbunmohammed@outlook.com
-        instructions: 'Please validate the deployment and continue.'
-        onTimeout: 'reject'
+# trigger:
+#   - main
+
+# stages:
+# - stage: One
+#   jobs:
+#   - job: A_ManualApprovalTest
+#     pool: server
+#     steps:
+#     - task: ManualValidation@0
+#       inputs:
+#         notifyUsers: |
+#           sadatbunmohammed@outlook.com
+#         instructions: 'Please validate this'
+
+#   - job: A
+#     dependsOn: A_ManualApprovalTest
+#     pool:
+#       name: Linux-agent-pool
+#     steps:
+#     - script: |
+#         docker --version
+#         docker ps
+#         echo "Running on agent: $AGENT_NAME"
+#         echo "##vso[task.setvariable variable=MyVar;isOutput=true]$AGENT_NAME"
+#       name: ProduceVar
+
+# - stage: Two
+#   dependsOn:
+#     - One
+#   jobs:
+#   - job: B_waitForValidation
+#     pool: server  # Server job required for ManualValidation
+#     variables:
+#       varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
+#     steps:
+#     - task: ManualValidation@0
+#       timeoutInMinutes: 1440
+#       inputs:
+#         notifyUsers: |
+#           sadatbunmohammed@outlook.com
+#         instructions: 'Please validate the build configuration and resume'
+#         onTimeout: 'resume'
+
+#   - job: B_followUp
+#     dependsOn: B_waitForValidation
+#     pool:
+#       name: Linux-agent-pool
+#     variables:
+#       varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
+#     steps:
+#     - script: echo $(varFromA)
+
+# - stage: ManualValidation
+#   dependsOn: Two
+#   jobs:
+#   - job: A_WaitForApproval
+#     pool: server  #  Must be server job for ManualValidation
+#     variables:
+#       varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
+#     steps:
+#     - task: ManualValidation@0
+#       timeoutInMinutes: 1440
+#       inputs:
+#         notifyUsers: |
+#           sadatbunmohammed@outlook.com
+#         instructions: 'Please validate the deployment and continue.'
+#         onTimeout: 'reject'
         
-- stage: Three
-  dependsOn:
-    - One
-    - Two
-    - ManualValidation
-  jobs:
-  - job: C_waitForValidation
-    pool: server
-    variables:
-      varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
-    steps:
-    - task: ManualValidation@0
-      timeoutInMinutes: 1440
-      inputs:
-        notifyUsers: |
-          sadatbunmohammed@outlook.com
-        instructions: 'Please validate the build configuration and resume'
-        onTimeout: 'resume'
+# - stage: Three
+#   dependsOn:
+#     - One
+#     - Two
+#     - ManualValidation
+#   jobs:
+#   - job: C_waitForValidation
+#     pool: server
+#     variables:
+#       varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
+#     steps:
+#     - task: ManualValidation@0
+#       timeoutInMinutes: 1440
+#       inputs:
+#         notifyUsers: |
+#           sadatbunmohammed@outlook.com
+#         instructions: 'Please validate the build configuration and resume'
+#         onTimeout: 'resume'
 
-  - job: C
-    dependsOn: C_waitForValidation  # <-- This ensures C runs after validation
-    pool:
-      name: Linux-agent-pool
-    variables:
-      varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
-    steps:
-    - script: echo $(varFromA)
+#   - job: C
+#     dependsOn: C_waitForValidation  # <-- This ensures C runs after validation
+#     pool:
+#       name: Linux-agent-pool
+#     variables:
+#       varFromA: $[ dependencies.One.A.outputs['ProduceVar.MyVar'] ]
+#     steps:
+#     - script: echo $(varFromA)
 
 
