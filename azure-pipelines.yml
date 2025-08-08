@@ -37,7 +37,7 @@ stages:
       inputs:
         notifyUsers: |
           sadatbunmohammed@outlook.com
-        instructions: 'Please validate the deployment for ${{ parameters.ENVIRONMENT }} environment with version/branch: ${{ parameters.VERSION_OR_BRANCH }}'
+        instructions: 'Please validate the deployment for ${{ parameters.ENVIRONMENT }} environment with version/branch:'
 
 - stage: Deploy
   displayName: 'Deployment Stage'
