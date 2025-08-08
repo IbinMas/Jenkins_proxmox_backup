@@ -5,7 +5,7 @@ parameters:
   - name: VERSION_OR_BRANCH
     displayName: 'Version tag or branch name'
     type: string
-    default: 'main'
+    default: '$(Build.SourceBranchName)'
 
   - name: ENVIRONMENT
     displayName: 'Target environment'
