@@ -102,14 +102,14 @@ stages:
         git log -1 --oneline
       displayName: 'Checkout ${{ parameters.VERSION_OR_BRANCH }}'
     
-    - script: |
-        echo "Environment: ${{ parameters.ENVIRONMENT }}"
-        echo "Services: ${{ parameters.SERVICES }}"
-        echo "Roles: ${{ parameters.ROLES }}"
-        echo "Deploy Path: $(DEPLOY_PATH)"
-        echo "Target Server: $(TARGET_SERVER)"
-        echo "Version/Branch: ${{ parameters.VERSION_OR_BRANCH }}"
-      displayName: 'Display Parameters and Variables'
+    # - script: |
+    #     echo "Environment: ${{ parameters.ENVIRONMENT }}"
+    #     echo "Services: ${{ parameters.SERVICES }}"
+    #     echo "Roles: ${{ parameters.ROLES }}"
+    #     echo "Deploy Path: $(DEPLOY_PATH)"
+    #     echo "Target Server: $(TARGET_SERVER)"
+    #     echo "Version/Branch: ${{ parameters.VERSION_OR_BRANCH }}"
+    #   displayName: 'Display Parameters and Variables'
     
 
 
