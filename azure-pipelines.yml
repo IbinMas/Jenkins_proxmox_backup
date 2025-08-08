@@ -7,27 +7,18 @@ parameters:
     type: string
     default: '$(Build.SourceBranchName)'
 
-  - name: ENVIRONMENT
-    displayName: 'Target environment'
-    type: string
-    default: 'sandbox'
-    values:
-      - sandbox
-      - dev
-      - stage
-      - prod
-      - common
-      - critical-env
+  # - name: ENVIRONMENT
+  #   displayName: 'Target environment'
+  #   type: string
+  #   default: 'sandbox'
+  #   values:
+  #     - sandbox
+  #     - dev
+  #     - stage
+  #     - prod
+  #     - common
+  #     - critical-env
 
-  - name: SERVICES
-    displayName: 'Comma-separated list of services to deploy'
-    type: string
-    default: 'nexus-v3.69.0'
-
-  - name: ROLES
-    displayName: 'Comma-separated list of roles to apply'
-    type: string
-    default: 'docker-compose-deploy-role'
 
 variables:
   DEPLOY_PATH: 'nexus-v3.69.0'
@@ -79,19 +70,31 @@ stages:
         # Check if the specified reference exists and checkout
         echo "Attempting to checkout: ${{ parameters.VERSION_OR_BRANCH }}"
         
+        # Check for local branch first
         if git show-ref --verify --quiet refs/heads/${{ parameters.VERSION_OR_BRANCH }}; then
-          echo "Checking out branch: ${{ parameters.VERSION_OR_BRANCH }}"
+          echo "Checking out local branch: ${{ parameters.VERSION_OR_BRANCH }}"
           git checkout ${{ parameters.VERSION_OR_BRANCH }}
+        # Check for remote branch
+        elif git show-ref --verify --quiet refs/remotes/origin/${{ parameters.VERSION_OR_BRANCH }}; then
+          echo "Checking out remote branch: origin/${{ parameters.VERSION_OR_BRANCH }}"
+          git checkout -b ${{ parameters.VERSION_OR_BRANCH }} origin/${{ parameters.VERSION_OR_BRANCH }}
+        # Check for tag
         elif git show-ref --verify --quiet refs/tags/${{ parameters.VERSION_OR_BRANCH }}; then
           echo "Checking out tag: ${{ parameters.VERSION_OR_BRANCH }}"
           git checkout tags/${{ parameters.VERSION_OR_BRANCH }}
+        # Check for commit hash
         elif git cat-file -e ${{ parameters.VERSION_OR_BRANCH }} 2>/dev/null; then
           echo "Checking out commit: ${{ parameters.VERSION_OR_BRANCH }}"
           git checkout ${{ parameters.VERSION_OR_BRANCH }}
         else
           echo "Error: '${{ parameters.VERSION_OR_BRANCH }}' is not a valid branch, tag, or commit hash"
-          echo "Available branches:"
+          echo ""
+          echo "Available local branches:"
+          git branch
+          echo ""
+          echo "Available remote branches:"
           git branch -r
+          echo ""
           echo "Available tags:"
           git tag --list
           exit 1
@@ -110,6 +113,18 @@ stages:
     #     echo "Target Server: $(TARGET_SERVER)"
     #     echo "Version/Branch: ${{ parameters.VERSION_OR_BRANCH }}"
     #   displayName: 'Display Parameters and Variables'
+    
+    # Add your build steps here
+    # Example:
+    # - script: |
+    #     docker build -t myapp:${{ parameters.VERSION_OR_BRANCH }} .
+    #   displayName: 'Build Docker Image'
+    
+    # Add your deployment steps here
+    # Example:
+    # - script: |
+    #     # Your deployment commands using the checked out version
+    #   displayName: 'Deploy to ${{ parameters.ENVIRONMENT }}'
     
 
 
