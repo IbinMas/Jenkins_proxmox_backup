@@ -19,11 +19,20 @@ parameters:
       - common
       - critical-env
 
+  - name: SERVICES
+    displayName: 'Comma-separated list of services to deploy'
+    type: string
+    default: 'nexus-v3.69.0'
 
-# variables:
-#   DEPLOY_PATH: 'nexus-v3.69.0'
-#   TARGET_SERVER: 'DevOps-01'
-#   # NEXUS_ADMIN_PASSWORD: # Add as pipeline variable or use Azure Key Vault
+  - name: ROLES
+    displayName: 'Comma-separated list of roles to apply'
+    type: string
+    default: 'docker-compose-deploy-role'
+
+variables:
+  DEPLOY_PATH: 'nexus-v3.69.0'
+  TARGET_SERVER: 'DevOps-01'
+  # NEXUS_ADMIN_PASSWORD: # Add as pipeline variable or use Azure Key Vault
 
 stages:
 - stage: Approval
@@ -48,7 +57,9 @@ stages:
     pool:
       name: Linux-agent-pool
     steps:
-    - checkout: none  # Don't auto-checkout initially
+    - checkout: self
+      fetchDepth: 0  # Get full history including all tags
+      displayName: 'Initial Checkout'
     
     - script: |
         docker --version
@@ -59,33 +70,47 @@ stages:
       displayName: 'Agent Info'
       
     - script: |
-        git clone $(Build.Repository.Uri) $(Build.SourcesDirectory)
         cd $(Build.SourcesDirectory)
-        git checkout ${{ parameters.VERSION_OR_BRANCH }}
+        
+        # Fetch all branches and tags
+        echo "Fetching all references..."
+        git fetch --all --tags
+        
+        # Check if the specified reference exists and checkout
+        echo "Attempting to checkout: ${{ parameters.VERSION_OR_BRANCH }}"
+        
+        if git show-ref --verify --quiet refs/heads/${{ parameters.VERSION_OR_BRANCH }}; then
+          echo "Checking out branch: ${{ parameters.VERSION_OR_BRANCH }}"
+          git checkout ${{ parameters.VERSION_OR_BRANCH }}
+        elif git show-ref --verify --quiet refs/tags/${{ parameters.VERSION_OR_BRANCH }}; then
+          echo "Checking out tag: ${{ parameters.VERSION_OR_BRANCH }}"
+          git checkout tags/${{ parameters.VERSION_OR_BRANCH }}
+        elif git cat-file -e ${{ parameters.VERSION_OR_BRANCH }} 2>/dev/null; then
+          echo "Checking out commit: ${{ parameters.VERSION_OR_BRANCH }}"
+          git checkout ${{ parameters.VERSION_OR_BRANCH }}
+        else
+          echo "Error: '${{ parameters.VERSION_OR_BRANCH }}' is not a valid branch, tag, or commit hash"
+          echo "Available branches:"
+          git branch -r
+          echo "Available tags:"
+          git tag --list
+          exit 1
+        fi
+        
         echo "Successfully checked out: ${{ parameters.VERSION_OR_BRANCH }}"
+        echo "Current commit:"
         git log -1 --oneline
       displayName: 'Checkout ${{ parameters.VERSION_OR_BRANCH }}'
     
-    # - script: |
-    #     echo "Environment: ${{ parameters.ENVIRONMENT }}"
-    #     echo "Services: ${{ parameters.SERVICES }}"
-    #     echo "Roles: ${{ parameters.ROLES }}"
-    #     echo "Deploy Path: $(DEPLOY_PATH)"
-    #     echo "Target Server: $(TARGET_SERVER)"
-    #     echo "Version/Branch: ${{ parameters.VERSION_OR_BRANCH }}"
-    #   displayName: 'Display Parameters and Variables'
+    - script: |
+        echo "Environment: ${{ parameters.ENVIRONMENT }}"
+        echo "Services: ${{ parameters.SERVICES }}"
+        echo "Roles: ${{ parameters.ROLES }}"
+        echo "Deploy Path: $(DEPLOY_PATH)"
+        echo "Target Server: $(TARGET_SERVER)"
+        echo "Version/Branch: ${{ parameters.VERSION_OR_BRANCH }}"
+      displayName: 'Display Parameters and Variables'
     
-    # Add your build steps here
-    # Example:
-    # - script: |
-    #     docker build -t myapp:${{ parameters.VERSION_OR_BRANCH }} .
-    #   displayName: 'Build Docker Image'
-    
-    # Add your deployment steps here
-    # Example:
-    # - script: |
-    #     # Your deployment commands using the checked out version
-    #   displayName: 'Deploy to ${{ parameters.ENVIRONMENT }}'
 
 
 
