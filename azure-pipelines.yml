@@ -7,34 +7,62 @@ parameters:
     type: string
     default: 'main'
 
-pool:
-  name: Linux-agent-pool
+stages:
+- stage: Build
+  displayName: "Build Stage"
+  jobs:
+  - job: Build
+    pool:
+      name: Linux-agent-pool
+    steps:
+    - checkout: self
+      fetchDepth: 0
+      displayName: 'Initial Checkout'
+    
+    - script: |
+        echo "Attempting to checkout: ${{ parameters.VERSION_OR_BRANCH }}"
+        
+        if git show-ref --verify --quiet refs/heads/${{ parameters.VERSION_OR_BRANCH }}; then
+          git checkout ${{ parameters.VERSION_OR_BRANCH }}
+        elif git show-ref --verify --quiet refs/tags/${{ parameters.VERSION_OR_BRANCH }}; then
+          git checkout tags/${{ parameters.VERSION_OR_BRANCH }}
+        else
+          echo "Error: '${{ parameters.VERSION_OR_BRANCH }}' not found"
+          exit 1
+        fi
+        
+        echo "Successfully checked out: ${{ parameters.VERSION_OR_BRANCH }}"
+        git log -1 --oneline
+      displayName: 'Checkout ${{ parameters.VERSION_OR_BRANCH }}'
 
-jobs:
-- job: Deploy
-  displayName: 'Deploy Services'
-  steps:
-  - checkout: self
-    fetchDepth: 0
-    displayName: 'Initial Checkout'
-  
-  - script: |
-      echo "Attempting to checkout: ${{ parameters.VERSION_OR_BRANCH }}"
-      
-      if git show-ref --verify --quiet refs/heads/${{ parameters.VERSION_OR_BRANCH }}; then
-        git checkout ${{ parameters.VERSION_OR_BRANCH }}
-      elif git show-ref --verify --quiet refs/tags/${{ parameters.VERSION_OR_BRANCH }}; then
-        git checkout tags/${{ parameters.VERSION_OR_BRANCH }}
-      else
-        echo "Error: '${{ parameters.VERSION_OR_BRANCH }}' not found"
-        exit 1
-      fi
-      
-      echo "Successfully checked out: ${{ parameters.VERSION_OR_BRANCH }}"
-      git log -1 --oneline
-    displayName: 'Checkout ${{ parameters.VERSION_OR_BRANCH }}'
-  
-  - script: |
-      docker --version
-      echo "Ready for deployment"
-    displayName: 'Deploy'
+- stage: DeployToQA
+  displayName: "Deploy to QA"
+  dependsOn: Build
+  jobs:
+  - deployment: DeployQA
+    displayName: "Deploy to QA Environment"
+    environment: "qa"     # 👈 environment name
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: |
+              docker --version
+              echo "Deploying to QA..."
+            displayName: "Deploy to QA"
+
+- stage: DeployToProd
+  displayName: "Deploy_to_Production"
+  dependsOn: DeployToQA
+  jobs:
+  - deployment: DeployProd
+    displayName: "Deploy_to_Production Environment"
+    environment: "Production"   # 👈 environment name
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: |
+              docker --version
+              echo "Deploying to Production..."
+            displayName: "Deploy to Prod"
