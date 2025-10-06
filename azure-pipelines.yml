@@ -1,0 +1,144 @@
+stages:
+- stage: ManualValidationWithExternalEmail
+  displayName: 'Manual Validation with External Email'
+  jobs:
+  - job: SendExternalEmail
+    displayName: 'Approval Job'
+    pool: Linux-agent-pool
+    steps:
+    - task: SendEmail@1
+      inputs:
+        To: 'sadat.mohammed@regent.edu.gh'
+        CC: 'sadat.mohammed@esoko.com'
+        From: 'azuredevops@microsoft.com'
+        Subject: 'Perform Manual Validation'
+        Body: |
+          # Add more email addresses or group names, each on a new line
+                  instructions: 'Please review the deployment configuration and approve to proceed.'
+                  onTimeout: 'reject' # Optional: Action to take if the timeout is reached (reject or resume)
+        BodyAsHtml: true
+        AddAttachment: false
+
+  - job: WaitForApprovalAndNotify
+    displayName: 'Approval Job'
+    pool: server # Agentless job
+    steps:
+    - task: ManualValidation@0
+      displayName: 'Request Internal Approval'
+      inputs:
+        notifyUsers: 'internal-user@your-org.com' # Required for manual validation
+        instructions: 'An external email was also sent for this approval. Please review and act accordingly.'
+
+
+
+
+    # - task: SendEmail@1
+    #   displayName: 'Send External Email Notification'
+    #   inputs:
+    #     to: 'external-contact@example.com' # Specify external email address
+    #     from: 'azuredevops@your-org.com'
+    #     subject: 'Action Required: Manual Validation for Pipeline $(Build.DefinitionName)'
+    #     body: |
+    #       Hello External User,
+          
+    #       Manual validation is required for the pipeline '$(Build.DefinitionName)'.
+    #       The run was triggered by: $(Build.RequestedFor)
+          
+    #       You can view the details here: $(System.TeamFoundationCollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)
+
+
+
+
+
+# trigger:
+#   - main
+
+# parameters:
+#   - name: VERSION_OR_BRANCH
+#     displayName: 'Version tag or branch name'
+#     type: string
+#     default: 'main'
+
+# stages:
+# - stage: Build
+#   displayName: "Build Stage"
+
+#   jobs:
+#   - job: ManualValidationJob
+#     displayName: 'Perform Manual Validation'
+#     pool: server # Manual validation tasks typically run on a server pool
+#     steps:
+#     - task: ManualValidation@0 # Or ManualValidation@1
+#       timeoutInMinutes: 120 # Optional: Timeout for the manual validation step
+#       inputs:
+#         notifyUsers: |
+#           sadat.mohammed@regent.edu.gh
+#           sadatbunmohammed@outlook.com
+#           mohammedanuwarsadat@gmail.com
+#           sadat.mohammed@esoko.com
+#           # Add more email addresses or group names, each on a new line
+#         instructions: 'Please review the deployment configuration and approve to proceed.'
+#         onTimeout: 'reject' # Optional: Action to take if the timeout is reached (reject or resume)
+#       displayName: 'Manual Validation Step'
+
+
+
+
+
+
+  # jobs:
+  # - job: Build
+  #   pool:
+  #     name: Linux-agent-pool
+  #   steps:
+  #   - checkout: self
+  #     fetchDepth: 0
+  #     displayName: 'Initial Checkout'
+    
+  #   - script: |
+  #       echo "Attempting to checkout: ${{ parameters.VERSION_OR_BRANCH }}"
+        
+  #       if git show-ref --verify --quiet refs/heads/${{ parameters.VERSION_OR_BRANCH }}; then
+  #         git checkout ${{ parameters.VERSION_OR_BRANCH }}
+  #       elif git show-ref --verify --quiet refs/tags/${{ parameters.VERSION_OR_BRANCH }}; then
+  #         git checkout tags/${{ parameters.VERSION_OR_BRANCH }}
+  #       else
+  #         echo "Error: '${{ parameters.VERSION_OR_BRANCH }}' not found"
+  #         exit 1
+  #       fi
+        
+  #       echo "Successfully checked out: ${{ parameters.VERSION_OR_BRANCH }}"
+  #       git log -1 --oneline
+  #     displayName: 'Checkout ${{ parameters.VERSION_OR_BRANCH }}'
+
+# - stage: DeployToQA
+#   displayName: "Deploy to QA"
+#   dependsOn: Build
+#   jobs:
+#   - deployment: DeployQA
+#     displayName: "Deploy to QA Environment"
+#     environment: "qa"     # 👈 environment name
+#     strategy:
+#       runOnce:
+#         deploy:
+#           steps:
+#           - script: |
+#               docker --version
+#               echo "Deploying to QA..."
+#             displayName: "Deploy to QA"
+
+# - stage: DeployToProd
+#   displayName: "Deploy_to_Production"
+#   dependsOn: DeployToQA
+#   jobs:
+#   - deployment: DeployProd
+#     displayName: "Deploy_to_Production Environment"
+#     environment: "Production"   # 👈 environment name
+#     strategy:
+#       runOnce:
+#         deploy:
+#           steps:
+#           - script: |
+#               docker --version
+#               echo "Deploying to Production..."
+#             displayName: "Deploy to Prod"
