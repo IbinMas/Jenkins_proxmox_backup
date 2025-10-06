@@ -10,30 +10,49 @@ parameters:
 stages:
 - stage: Build
   displayName: "Build Stage"
+
   jobs:
-  - job: Build
-    pool:
-      name: Linux-agent-pool
+  - job: ManualValidationJob
+    displayName: 'Perform Manual Validation'
+    pool: server # Manual validation tasks typically run on a server pool
     steps:
-    - checkout: self
-      fetchDepth: 0
-      displayName: 'Initial Checkout'
+    - task: ManualValidation@0 # Or ManualValidation@1
+      timeoutInMinutes: 120 # Optional: Timeout for the manual validation step
+      inputs:
+        notifyUsers: |
+          sadat.mohammed@regent.edu.gh
+          sadatbunmohammed@outlook.com
+          mohammedanuwarsadat@gmail.com
+          sadat.mohammed@esoko.com
+          # Add more email addresses or group names, each on a new line
+        instructions: 'Please review the deployment configuration and approve to proceed.'
+        onTimeout: 'reject' # Optional: Action to take if the timeout is reached (reject or resume)
+      displayName: 'Manual Validation Step'
+      
+  # jobs:
+  # - job: Build
+  #   pool:
+  #     name: Linux-agent-pool
+  #   steps:
+  #   - checkout: self
+  #     fetchDepth: 0
+  #     displayName: 'Initial Checkout'
     
-    - script: |
-        echo "Attempting to checkout: ${{ parameters.VERSION_OR_BRANCH }}"
+  #   - script: |
+  #       echo "Attempting to checkout: ${{ parameters.VERSION_OR_BRANCH }}"
         
-        if git show-ref --verify --quiet refs/heads/${{ parameters.VERSION_OR_BRANCH }}; then
-          git checkout ${{ parameters.VERSION_OR_BRANCH }}
-        elif git show-ref --verify --quiet refs/tags/${{ parameters.VERSION_OR_BRANCH }}; then
-          git checkout tags/${{ parameters.VERSION_OR_BRANCH }}
-        else
-          echo "Error: '${{ parameters.VERSION_OR_BRANCH }}' not found"
-          exit 1
-        fi
+  #       if git show-ref --verify --quiet refs/heads/${{ parameters.VERSION_OR_BRANCH }}; then
+  #         git checkout ${{ parameters.VERSION_OR_BRANCH }}
+  #       elif git show-ref --verify --quiet refs/tags/${{ parameters.VERSION_OR_BRANCH }}; then
+  #         git checkout tags/${{ parameters.VERSION_OR_BRANCH }}
+  #       else
+  #         echo "Error: '${{ parameters.VERSION_OR_BRANCH }}' not found"
+  #         exit 1
+  #       fi
         
-        echo "Successfully checked out: ${{ parameters.VERSION_OR_BRANCH }}"
-        git log -1 --oneline
-      displayName: 'Checkout ${{ parameters.VERSION_OR_BRANCH }}'
+  #       echo "Successfully checked out: ${{ parameters.VERSION_OR_BRANCH }}"
+  #       git log -1 --oneline
+  #     displayName: 'Checkout ${{ parameters.VERSION_OR_BRANCH }}'
 
 - stage: DeployToQA
   displayName: "Deploy to QA"
