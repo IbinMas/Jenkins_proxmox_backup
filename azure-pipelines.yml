@@ -2,15 +2,10 @@ stages:
 - stage: ManualValidationWithExternalEmail
   displayName: 'Manual Validation with External Email'
   jobs:
-  - job: WaitForApprovalAndNotify
+  - job: SendExternalEmail
     displayName: 'Approval Job'
-    pool: server # Agentless job
+    pool: Linux-agent-pool
     steps:
-    - task: ManualValidation@0
-      displayName: 'Request Internal Approval'
-      inputs:
-        notifyUsers: 'internal-user@your-org.com' # Required for manual validation
-        instructions: 'An external email was also sent for this approval. Please review and act accordingly.'
     - task: SendEmail@1
       inputs:
         To: 'sadat.mohammed@regent.edu.gh'
@@ -23,6 +18,16 @@ stages:
                   onTimeout: 'reject' # Optional: Action to take if the timeout is reached (reject or resume)
         BodyAsHtml: true
         AddAttachment: false
+
+  - job: WaitForApprovalAndNotify
+    displayName: 'Approval Job'
+    pool: server # Agentless job
+    steps:
+    - task: ManualValidation@0
+      displayName: 'Request Internal Approval'
+      inputs:
+        notifyUsers: 'internal-user@your-org.com' # Required for manual validation
+        instructions: 'An external email was also sent for this approval. Please review and act accordingly.'
 
 
 
@@ -106,34 +111,34 @@ stages:
   #       git log -1 --oneline
   #     displayName: 'Checkout ${{ parameters.VERSION_OR_BRANCH }}'
 
-- stage: DeployToQA
-  displayName: "Deploy to QA"
-  dependsOn: Build
-  jobs:
-  - deployment: DeployQA
-    displayName: "Deploy to QA Environment"
-    environment: "qa"     # 👈 environment name
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - script: |
-              docker --version
-              echo "Deploying to QA..."
-            displayName: "Deploy to QA"
+# - stage: DeployToQA
+#   displayName: "Deploy to QA"
+#   dependsOn: Build
+#   jobs:
+#   - deployment: DeployQA
+#     displayName: "Deploy to QA Environment"
+#     environment: "qa"     # 👈 environment name
+#     strategy:
+#       runOnce:
+#         deploy:
+#           steps:
+#           - script: |
+#               docker --version
+#               echo "Deploying to QA..."
+#             displayName: "Deploy to QA"
 
-- stage: DeployToProd
-  displayName: "Deploy_to_Production"
-  dependsOn: DeployToQA
-  jobs:
-  - deployment: DeployProd
-    displayName: "Deploy_to_Production Environment"
-    environment: "Production"   # 👈 environment name
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - script: |
-              docker --version
-              echo "Deploying to Production..."
-            displayName: "Deploy to Prod"
+# - stage: DeployToProd
+#   displayName: "Deploy_to_Production"
+#   dependsOn: DeployToQA
+#   jobs:
+#   - deployment: DeployProd
+#     displayName: "Deploy_to_Production Environment"
+#     environment: "Production"   # 👈 environment name
+#     strategy:
+#       runOnce:
+#         deploy:
+#           steps:
+#           - script: |
+#               docker --version
+#               echo "Deploying to Production..."
+#             displayName: "Deploy to Prod"
